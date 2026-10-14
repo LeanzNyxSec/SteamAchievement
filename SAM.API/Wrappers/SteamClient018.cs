@@ -1,4 +1,4 @@
-﻿/* Copyright (c) 2024 Rick (rick 'at' gibbed 'dot' us)
+/* Copyright (c) 2024 Rick (rick 'at' gibbed 'dot' us)
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -143,6 +143,20 @@ namespace SAM.API.Wrappers
             }
         }
         #endregion
+
+        // Enhanced edition: v012 retains the explicit local-user stats refresh.
+        [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        private delegate bool NativeRequestCurrentStats(IntPtr self);
+        public bool RequestCurrentStats(int user, int pipe)
+        {
+            using var version = NativeStrings.StringToStringHandle("STEAMUSERSTATS_INTERFACE_VERSION012");
+            IntPtr address = this.Call<IntPtr, NativeGetISteamUserStats>(this.Functions.GetISteamUserStats, this.ObjectAddress, user, pipe, version.Handle);
+            if (address == IntPtr.Zero) return false;
+            IntPtr table = Marshal.ReadIntPtr(address);
+            var request = (NativeRequestCurrentStats)Marshal.GetDelegateForFunctionPointer(Marshal.ReadIntPtr(table), typeof(NativeRequestCurrentStats));
+            return request(address);
+        }
 
         #region GetSteamUserStats013
         public SteamUserStats013 GetSteamUserStats013(int user, int pipe)

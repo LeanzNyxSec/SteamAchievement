@@ -4,7 +4,7 @@
 | --- | --- |
 | Steam connection failed | Open Steam, sign in, and launch the app again. |
 | Missing games | Let the Steam Library finish loading, refresh the list, or add the App ID / Store link manually. Local metadata can be incomplete. |
-| Unknown / unavailable | Choose Check selected again. A missing schema or failed request is not proof of protection. |
+| Unknown / unavailable | Choose Check games again. A missing schema or failed request is not proof of protection. |
 | Protected game | Bulk actions skip protected entries. The app does not override server restrictions. |
 | Unconfirmed save | Check the Last result column. Steam may retry staged changes; do not assume nothing changed. Read the state again before another action. |
 | Open editor conflict | Close editors for those games before running a bulk action. |

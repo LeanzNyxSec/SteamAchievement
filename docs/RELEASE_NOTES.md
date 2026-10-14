@@ -1,6 +1,12 @@
-# SAM Enhanced v7.0.41.1
+# SAM Enhanced v7.0.41.2
 
-Achievement availability at a glance, with reviewed bulk actions across selected games.
+This update fixes inflated library counts from shared cache entries, missing game names, and unreliable live checks.
+
+- Automatic discovery reads only the active account's valid license packages.
+- Game names come from app metadata with a native fallback.
+- Live checks refresh local stats, wait for delayed schemas, and report counts when permissions are unavailable.
+- **Check games** checks selected games, or all account games if none are selected.
+- **Unlock all** and **Lock all** apply to selected games after review.
 
 - Color-coded editable, partly protected, protected, no-achievement and unknown states.
 - Bulk unlock or relock editable achievements across multiple checked games.
@@ -12,9 +18,9 @@ Achievement availability at a glance, with reviewed bulk actions across selected
 
 ## Download and start
 
-Download **SAMEnhanced-v7.0.41.1-windows-x86.zip**, extract every file into one folder, open Steam, then run **SAM.Picker.exe**. Requires Windows and .NET Framework 4.8.
+Download **SAMEnhanced-v7.0.41.2-windows-x86.zip**, extract every file into one folder, open Steam, then run **SAM.Picker.exe**. Requires Windows and .NET Framework 4.8.
 
-The green state indicates editable candidates; Steam can still reject saving. Real account writes were not exercised during validation. All 19 synthetic tests passed, and a read-only Steam probe succeeded.
+The green state indicates editable candidates; Steam can still reject saving. Real account writes were not exercised during validation. All 29 synthetic tests passed, and a read-only Steam probe succeeded.
 
 Original SAM by **Rick / gibbed**. Unofficial modified edition, enhanced for **leanz**.
 Community: https://discord.gg/JaRSAWTUMx — zlib license retained.

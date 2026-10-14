@@ -1,4 +1,4 @@
-﻿/* Copyright (c) 2024 Rick (rick 'at' gibbed 'dot' us)
+/* Copyright (c) 2024 Rick (rick 'at' gibbed 'dot' us)
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -121,6 +121,8 @@ namespace SAM.API
             Dispose(true);
             GC.SuppressFinalize(this);
         }
+
+        public bool RequestCurrentStats() => this.SteamClient.RequestCurrentStats(this._User, this._Pipe);
 
         public TCallback CreateAndRegisterCallback<TCallback>()
             where TCallback : ICallback, new()

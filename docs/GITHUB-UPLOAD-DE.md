@@ -28,10 +28,10 @@ Quelle: https://docs.github.com/en/repositories/working-with-files/managing-file
 ## Release erstellen
 
 1. **Releases → Draft a new release** öffnen.
-2. Neuen Tag `v7.0.41.1` auf dem vollständigen Hauptbranch erstellen.
-3. Titel: **SAM Enhanced v7.0.41.1**.
+2. Neuen Tag `v7.0.41.2` auf dem vollständigen Hauptbranch erstellen.
+3. Titel: **SAM Enhanced v7.0.41.2**.
 4. Inhalt aus `RELEASE_NOTES.md` in das Beschreibungsfeld kopieren.
-5. `SAMEnhanced-v7.0.41.1-windows-x86.zip` und `SAMEnhanced-SHA256SUMS.txt` als Dateien anhängen.
+5. `SAMEnhanced-v7.0.41.2-windows-x86.zip` und `SAMEnhanced-SHA256SUMS.txt` als Dateien anhängen.
 6. **Publish release** wählen.
 
 Quelle: https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository
