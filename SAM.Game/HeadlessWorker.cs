@@ -53,50 +53,43 @@ namespace SAM.Game
                 bool received = false;
                 int receivedResult = 0;
                 var statsCallback = client.CreateAndRegisterCallback<API.Callbacks.UserStatsReceived>();
-                // The client identity is checked directly; only the game/result callback fields are needed.
-                statsCallback.OnRun += data => { if (data.GameId == request.GameId) { receivedResult = data.Result; received = true; } };
-                if (client.SteamUserStats.RequestUserStats(userId) == API.CallHandle.Invalid)
+                // Match the local user as well as the game; the steamclient callback uses the original packed ABI.
+                statsCallback.OnRun += data => { if (data.GameId == request.GameId && data.SteamIdUser == userId) { receivedResult = data.Result; received = true; } };
+                bool localRequest = client.RequestCurrentStats();
+                var userRequest = client.SteamUserStats.RequestUserStats(userId);
+                if (!localRequest && userRequest == API.CallHandle.Invalid)
                     throw new InvalidOperationException("Steam did not accept the statistics request. Retry later.");
                 var waiting = Stopwatch.StartNew();
                 while (!received && waiting.Elapsed.TotalSeconds < 60) { client.RunCallbacks(false); Thread.Sleep(30); }
                 if (!received || receivedResult != 1)
                     throw new InvalidOperationException(!received ? "Timed out while reading stats; editability is still unknown." : "Stats request rejected by Steam (result " + receivedResult + ").");
 
-                var inspection = SchemaInspector.ReadCached(API.Steam.GetInstallPath(), request.GameId);
-                inspection.SteamId = userId;
-                inspection.Live = true;
-                uint actualCount = client.SteamUserStats.GetNumAchievements();
-                if (actualCount == 0)
+                var refresh = Stopwatch.StartNew();
+                GameInspection inspection = null;
+                do
                 {
-                    inspection.Achievements.Clear();
-                    inspection.Availability = Availability.NoAchievements;
-                    inspection.Detail = "Steam reports no achievements for this game.";
-                }
-                else if (inspection.Availability != Availability.Unknown && actualCount != inspection.Total)
-                {
-                    inspection.Availability = Availability.Unknown;
-                    inspection.Detail = "Cached schema does not match Steam's achievement count. Retry after Steam refreshes the schema; nothing is eligible yet.";
-                }
-                else if (inspection.Availability != Availability.Unknown)
-                {
-                    var liveNames = new HashSet<string>(StringComparer.Ordinal);
-                    for (uint index = 0; index < actualCount; index++) liveNames.Add(client.SteamUserStats.GetAchievementName(index));
-                    if (!liveNames.SetEquals(inspection.Achievements.Select(a => a.Id)))
+                    client.RunCallbacks(false);
+                    var schema = SchemaInspector.ReadCached(API.Steam.GetInstallPath(), request.GameId);
+                    schema.SteamId = userId;
+                    string name = client.SteamApps001.GetAppData(request.GameId, "name");
+                    schema.GameName = string.IsNullOrWhiteSpace(name) ? null : name;
+                    uint count = client.SteamUserStats.GetNumAchievements();
+                    if (count > 65536) throw new InvalidOperationException("Steam returned an invalid achievement count.");
+                    var achievements = new List<AchievementRule>();
+                    for (uint index = 0; index < count; index++)
                     {
-                        inspection.Availability = Availability.Unknown;
-                        inspection.Detail = "Cached achievement IDs do not match Steam. Refresh and check again; nothing is eligible yet.";
+                        string id = client.SteamUserStats.GetAchievementName(index);
+                        bool readable = !string.IsNullOrWhiteSpace(id) && client.SteamUserStats.GetAchievement(id, out _);
+                        bool achieved = false;
+                        if (readable) client.SteamUserStats.GetAchievement(id, out achieved);
+                        achievements.Add(new AchievementRule { Id = id, Readable = readable, Achieved = achieved });
                     }
-                    else
-                    {
-                    foreach (var achievement in inspection.Achievements)
-                    {
-                        achievement.Readable = client.SteamUserStats.GetAchievement(achievement.Id, out bool state);
-                        achievement.Achieved = state;
-                    }
-                    SchemaInspector.Classify(inspection);
-                    inspection.Detail = "Live read: " + inspection.EditableCount + " editable candidates; " + inspection.ProtectedCount + " protected; " + inspection.Total + " total. Saving can still be rejected by Steam.";
-                    }
-                }
+                    inspection = LiveInspector.Merge(schema, achievements);
+                    if (inspection.Total > 0 && inspection.Achievements.All(a => a.PermissionKnown && a.Readable)) break;
+                    // A callback may precede disk schema/local state readiness. Let both settle.
+                    Thread.Sleep(250);
+                } while (refresh.Elapsed.TotalSeconds < 8);
+                if (!client.SteamUser.IsLoggedIn() || client.SteamUser.GetSteamId() != userId) throw new InvalidOperationException("Steam account changed during the check. Nothing applied.");
 
                 BatchResult result;
                 if (args[0] == "--apply")

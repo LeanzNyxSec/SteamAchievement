@@ -10,30 +10,22 @@ namespace SAM.Enhanced
 {
     public static class LibraryIndex
     {
-        public static Dictionary<uint, string> Read(string steamPath)
+        public static Dictionary<uint, string> Read(string steamPath, ulong steamId)
         {
+            // Global metadata supplies names only. The current account's licenses supply IDs.
+            var owned = AccountLibrary.ReadOwnedAppIds(steamPath, steamId);
+            Dictionary<uint, CachedGame> metadata;
+            try { metadata = MetadataReader.ReadAppInfo(AccountLibrary.ReadShared(Path.Combine(steamPath, "appcache", "appinfo.vdf"))); }
+            catch (IOException e) { throw new IOException("Game metadata could not be read. Open Steam’s Library, let it load, and Refresh library.", e); }
             var games = new Dictionary<uint, string>();
-            string appinfo = Path.Combine(steamPath, "appcache", "appinfo.vdf");
-            if (File.Exists(appinfo))
+            foreach (uint id in owned)
             {
-                try
+                if (metadata.TryGetValue(id, out var game))
                 {
-                    using var stream = new FileStream(appinfo, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-                    using var memory = new MemoryStream(); stream.CopyTo(memory);
-                    foreach (var pair in MetadataReader.ReadAppInfo(memory.ToArray()))
-                        if (pair.Key >= 10 && (pair.Value.Type.Length == 0 || pair.Value.Type.Equals("game", StringComparison.OrdinalIgnoreCase)))
-                            games[pair.Key] = pair.Value.Name;
+                    if (!game.Type.Equals("game", StringComparison.OrdinalIgnoreCase)) continue;
+                    games[id] = game.Name;
                 }
-                catch { } // Fall back to local artwork/manifests; an unreadable cache is not fatal.
-            }
-            string cache = Path.Combine(steamPath, "appcache", "librarycache");
-            if (Directory.Exists(cache))
-            {
-                foreach (string entry in Directory.EnumerateFileSystemEntries(cache))
-                {
-                    Match match = Regex.Match(Path.GetFileName(entry), @"^(\d+)(?:_|$)");
-                    if (match.Success && uint.TryParse(match.Groups[1].Value, out uint id) && id >= 10 && !games.ContainsKey(id)) games[id] = "App " + id;
-                }
+                else games[id] = "App " + id;
             }
             return games;
         }

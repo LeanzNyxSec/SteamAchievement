@@ -27,7 +27,7 @@ namespace SAM.Enhanced
 
             bool target = request.Action == BatchAction.Unlock;
             var plan = new HashSet<string>(request.AchievementIds ?? new List<string>(), StringComparer.Ordinal);
-            var permitted = current.Achievements.Where(a => !a.Protected && a.Readable && plan.Contains(a.Id)).ToArray();
+            var permitted = current.Achievements.Where(a => a.PermissionKnown && !a.Protected && a.Readable && plan.Contains(a.Id)).ToArray();
             var staged = new List<string>();
             foreach (var achievement in permitted)
             {

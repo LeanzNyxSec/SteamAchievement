@@ -42,9 +42,13 @@ namespace SAM.Enhanced
                     if (size < header || end > entriesEnd) throw new InvalidDataException("Incomplete appinfo entry.");
                     stream.Position += header;
                     var game = new CachedGame { Id = id, Name = "App " + id };
-                    ReadObject(reader, table, end, "", game, 0);
-                    games[id] = game;
-                    stream.Position = end;
+                    try
+                    {
+                        ReadObject(reader, table, end, "", game, 0);
+                        games[id] = game;
+                    }
+                    catch (InvalidDataException) { } // A bad entry must not discard names from the rest of the cache.
+                    finally { stream.Position = end; }
                 }
             }
             return games;

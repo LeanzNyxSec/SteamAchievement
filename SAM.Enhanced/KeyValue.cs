@@ -1,4 +1,4 @@
-﻿/* Copyright (c) 2024 Rick (rick 'at' gibbed 'dot' us)
+/* Copyright (c) 2024 Rick (rick 'at' gibbed 'dot' us)
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -231,7 +231,7 @@ namespace SAM.Game
                 {
                     var type = (KeyValueType)input.ReadValueU8();
 
-                    if (type == KeyValueType.End)
+                    if (type == KeyValueType.End || (byte)type == 11)
                     {
                         break;
                     }
@@ -246,7 +246,7 @@ namespace SAM.Game
                     {
                         case KeyValueType.None:
                         {
-                            current.ReadAsBinary(input);
+                            if (!current.ReadAsBinary(input)) throw new FormatException("Invalid nested object.");
                             break;
                         }
 
@@ -312,7 +312,7 @@ namespace SAM.Game
                 }
 
                 this.Valid = true;
-                return input.Position == input.Length;
+                return true;
             }
             catch (Exception)
             {

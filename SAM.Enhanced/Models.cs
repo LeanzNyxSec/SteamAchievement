@@ -8,7 +8,7 @@ using System.Xml.Serialization;
 
 namespace SAM.Enhanced
 {
-    public enum Availability { Unknown, ClientEditable, PartlyProtected, Protected, NoAchievements, Unavailable, NoLicense }
+    public enum Availability { Unknown, ClientEditable, PartlyProtected, Protected, NoAchievements, Unavailable, NoLicense, PermissionsUnknown }
     public enum BatchAction { Check, Unlock, Lock }
     public enum SaveOutcome { NotApplied, NoChanges, Confirmed, PartlyConfirmed, Unconfirmed, Failed, Cancelled }
 
@@ -17,6 +17,7 @@ namespace SAM.Enhanced
         public string Id;
         public int Permission;
         public bool Protected;
+        public bool PermissionKnown = true;
         public bool Readable;
         public bool Achieved;
     }
@@ -24,6 +25,7 @@ namespace SAM.Enhanced
     public sealed class GameInspection
     {
         public uint GameId;
+        public string GameName;
         public ulong SteamId;
         public bool Live;
         public Availability Availability;
@@ -31,8 +33,8 @@ namespace SAM.Enhanced
         public List<AchievementRule> Achievements = new();
         [XmlIgnore] public int Total => this.Achievements.Count;
         [XmlIgnore] public int ProtectedCount => this.Achievements.Count(a => a.Protected);
-        [XmlIgnore] public int EditableCount => this.Achievements.Count(a => !a.Protected && (!this.Live || a.Readable));
-        public int ChangesFor(BatchAction action) => this.Achievements.Count(a => !a.Protected && a.Readable && a.Achieved != (action == BatchAction.Unlock));
+        [XmlIgnore] public int EditableCount => this.Achievements.Count(a => a.PermissionKnown && !a.Protected && (!this.Live || a.Readable));
+        public int ChangesFor(BatchAction action) => this.Achievements.Count(a => a.PermissionKnown && !a.Protected && a.Readable && a.Achieved != (action == BatchAction.Unlock));
         public string StatusText => this.Availability switch
         {
             Availability.ClientEditable => this.Live ? "Client-editable" : "Client-editable (cache)",
@@ -40,6 +42,7 @@ namespace SAM.Enhanced
             Availability.Protected => "Protected / not editable",
             Availability.NoAchievements => "No achievements",
             Availability.NoLicense => "No usable game license",
+            Availability.PermissionsUnknown => "Achievements loaded / permissions unknown",
             Availability.Unavailable => "Unavailable / retry check",
             _ => "Unknown / check needed",
         };
