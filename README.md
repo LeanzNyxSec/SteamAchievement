@@ -13,7 +13,7 @@
 
 <p align="center"><strong>Achievement availability at a glance. One reviewed action across multiple games.</strong><br>Credits: <strong>leanz</strong> · <a href="https://discord.gg/JaRSAWTUMx">Discord community</a></p>
 
-Version **7.0.41.1**. An independently modified edition of [Steam Achievement Manager](https://github.com/gibbed/SteamAchievementManager), based on the supplied 7.0.41 source archive. Original software by Rick / gibbed; enhanced edition prepared for **leanz**. Community: https://discord.gg/JaRSAWTUMx
+Version **7.0.41.2**. An independently modified edition of [Steam Achievement Manager](https://github.com/gibbed/SteamAchievementManager), based on the supplied 7.0.41 source archive. Original software by Rick / gibbed; enhanced edition prepared for **leanz**. Community: https://discord.gg/JaRSAWTUMx
 
 ![Availability preview](assets/sam-enhanced-preview.png)
 
@@ -30,15 +30,17 @@ Version **7.0.41.1**. An independently modified edition of [Steam Achievement Ma
 
 ### Quick start
 
-Download **SAMEnhanced-v7.0.41.1-windows-x86.zip** from this repository’s **Releases** section. GitHub’s automatic source-code ZIP contains source, not the runnable app.
+Download **SAMEnhanced-v7.0.41.2-windows-x86.zip** from this repository’s **Releases** section. GitHub’s automatic source-code ZIP contains source, not the runnable app.
 
 1. Extract the entire Windows ZIP into one folder. Keep both executables and all DLLs together.
 2. Open Steam and sign in.
 3. Run **Start.cmd** or **SAM.Picker.exe**. Requires Windows and .NET Framework 4.8. The app is built for x86, including on 64-bit Windows.
-4. Check the games you want, then choose **Check selected**, **Unlock editable…**, or **Lock editable…**.
+4. Check the games you want, then choose **Check games**, **Unlock all**, or **Lock all**.
 5. Unlock/lock first reads each game, then shows a review of the proposed changes. Confirming applies that plan.
 
-The bulk actions unlock or relock **all editable achievements** in the selected games that need that change. For individual achievements, choose **Open editor(s)**. Multiple selected games can have separate editors; close those editors before applying a bulk action to the same games.
+**Check games** checks selected games, or the complete account list when none are selected. It never changes achievements. A live result shows achievement counts even when schema permissions are missing; those entries remain excluded from writes.
+
+**Unlock all** and **Lock all** unlock or relock **all editable achievements** in the selected games that need that change. For individual achievements, choose **Open editor(s)**. Multiple selected games can have separate editors; close those editors before applying a bulk action to the same games.
 
 ### Availability
 
@@ -48,9 +50,10 @@ The bulk actions unlock or relock **all editable achievements** in the selected 
 | Amber — Partly protected | Some entries are protected or unreadable. Only readable, unprotected entries are eligible. |
 | Red — Protected / not editable | All schema entries are protected; the bulk action skips them. |
 | No achievements | No achievement entries are reported. |
-| Unknown / unavailable | Missing cache, failed read, or timeout. This does **not** mean the game is protected. Retry **Check selected**. |
+| Achievements loaded / permissions unknown | Live achievements were read, but permission data is missing. Counts are shown; these entries are not changed. |
+| Unknown / unavailable | Missing cache, failed read, or timeout. This does **not** mean the game is protected. Retry **Check games**. |
 
-The initial list uses local Steam metadata and cached achievement schemas, without changing achievements. A fresh stats read occurs before every bulk preview and again before applying the approved IDs. Local metadata may not include every owned game; use the App ID / Store link field for missing titles. A usable Steam license is required. This edition does not bypass ownership or server restrictions.
+The initial list maps **only the active account’s valid local license packages** to games. Global artwork and other accounts’ folders are not treated as ownership. Cancelled, expired, pending, and unactivated licenses and the global free-to-play package are excluded. Metadata supplies names, not ownership. Account changes require refreshing the list. Cached achievement schemas are inspected without changing achievements. A fresh stats read occurs before every bulk preview and again before applying the approved IDs. An incomplete or stale license/package cache may omit titles; open Steam’s Library and refresh. Manual App IDs / Store links remain available. Missing account caches produce an explicit error instead of an inflated global list. A usable Steam license is required. This edition does not bypass ownership or server restrictions.
 
 ### Bulk behavior
 

@@ -11,3 +11,9 @@ Modifications prepared for leanz, 2026:
 
 This altered version is not represented as an official upstream SAM release.
 Community credits: leanz — https://discord.gg/JaRSAWTUMx
+
+7.0.41.2 format references (independent parser implementations):
+- xPaw/SteamAppInfo — local app/package cache format.
+- wynick27/steam-missing-covers-downloader/license_parser.py — license cache obfuscation format.
+- SteamDatabase/Protobufs — CMsgClientLicenseList field definitions.
+- ValvePython/steam — license flag definitions.

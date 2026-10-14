@@ -1,7 +1,8 @@
-# Validation
+# Validation — 7.0.41.2
 
-- Windows x86 Release builds: zero warnings and zero errors.
-- 19 synthetic regression tests passed; no real achievement writes.
-- Main picker and review-dialog previews rendered and visually checked.
-- Read-only probe against the running Steam client succeeded for a sample owned game: 520 live achievement names matched the cached schema. No writes performed.
-- Real account unlock/lock saves were not exercised. They remain subject to Steam acceptance.
+- Release builds: zero warnings and errors.
+- 29 synthetic tests cover account isolation, cancelled/foreign licenses, package formats, game names, protected and unknown permissions, and save outcomes.
+- Read-only discovery against the current account's local cache succeeded; game names resolved from metadata.
+- Read-only native Steam probe succeeded: 520 achievement IDs/states loaded with matching schema permissions.
+- UI previews use synthetic data. No real account achievement writes were exercised.
+- Another PC may have different or stale Steam cache files; missing account caches produce an error instead of a combined library.

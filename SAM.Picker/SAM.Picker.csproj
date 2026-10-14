@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyTitle>Steam Achievement Manager Enhanced Picker</AssemblyTitle>
     <Company>Gibbed</Company>
@@ -7,9 +7,9 @@
     <Copyright>Copyright © Gibbed 2019</Copyright>
   </PropertyGroup>
   <PropertyGroup>
-    <Version>7.0.41.1</Version>
-    <AssemblyVersion>7.0.41.1</AssemblyVersion>
-    <FileVersion>7.0.41.1</FileVersion>
+    <Version>7.0.41.2</Version>
+    <AssemblyVersion>7.0.41.2</AssemblyVersion>
+    <FileVersion>7.0.41.2</FileVersion>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>SAM.ico</ApplicationIcon>

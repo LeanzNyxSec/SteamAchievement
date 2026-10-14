@@ -5,7 +5,7 @@ Original SAM: Rick / gibbed. Unofficial modified edition.
 1. Extract ALL release files into one folder.
 2. Open Steam and sign in.
 3. Double-click Start.cmd or SAM.Picker.exe.
-4. Check games, then use Check selected, Unlock editable or Lock editable.
+4. Check games, then use Check games, Unlock all or Lock all.
 5. Review the proposed changes before confirming.
 
 Green: editable candidates. Amber: partly protected. Red: protected.

@@ -19,7 +19,7 @@ namespace SAM.Picker
         private sealed class Entry { public uint Id; public string Name; public GameInspection Inspection; public string Last = "Not changed"; }
         private readonly API.Client steam;
         private readonly bool demo;
-        private readonly ulong account;
+        private ulong account;
         private readonly Dictionary<uint, Entry> entries = new();
         private readonly HashSet<uint> checkedIds = new();
         private readonly Dictionary<uint, Process> editors = new();
@@ -42,7 +42,7 @@ namespace SAM.Picker
             this.steam = client; this.demo = preview;
             this.account = client == null ? 0 : client.SteamUser.GetSteamId();
             this.runner = preview ? null : new BatchRunner();
-            this.Text = "Steam Achievement Manager — Enhanced edition";
+            this.Text = "Steam Achievement Manager — Enhanced v7.0.41.2";
             this.BackColor = Color.FromArgb(15, 23, 42); this.ForeColor = Color.White;
             this.Font = new Font("Segoe UI", 9.5f); this.ClientSize = new Size(1180, 700);
             this.MinimumSize = new Size(960, 560); this.StartPosition = FormStartPosition.CenterScreen;
@@ -53,9 +53,9 @@ namespace SAM.Picker
             header.Controls.Add(new Label { Text = preview ? "SAM Enhanced  •  read-only preview" : "SAM Enhanced", Font = new Font("Segoe UI", 21, FontStyle.Bold), AutoSize = true, Location = new Point(18, 4) });
             var commands = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 46, Padding = new Padding(14, 3, 0, 0), WrapContents = false };
             commands.Controls.Add(this.MakeButton("Refresh library", async (_, _) => await this.LoadLibrary()));
-            commands.Controls.Add(this.MakeButton("Check selected", async (_, _) => await this.RunBatch(BatchAction.Check)));
-            commands.Controls.Add(this.MakeButton("Unlock editable…", async (_, _) => await this.RunBatch(BatchAction.Unlock), Color.FromArgb(22, 101, 52)));
-            commands.Controls.Add(this.MakeButton("Lock editable…", async (_, _) => await this.RunBatch(BatchAction.Lock), Color.FromArgb(133, 77, 14)));
+            commands.Controls.Add(this.MakeButton("Check games", async (_, _) => await this.RunBatch(BatchAction.Check)));
+            commands.Controls.Add(this.MakeButton("Unlock all", async (_, _) => await this.RunBatch(BatchAction.Unlock), Color.FromArgb(22, 101, 52)));
+            commands.Controls.Add(this.MakeButton("Lock all", async (_, _) => await this.RunBatch(BatchAction.Lock), Color.FromArgb(133, 77, 14)));
             commands.Controls.Add(this.MakeButton("Open editor(s)", (_, _) => this.OpenEditors()));
             this.cancel = this.MakeButton("Cancel queued", (_, _) => this.cancellation?.Cancel());
             this.actionButtons.Remove(this.cancel); this.cancel.Enabled = false; commands.Controls.Add(this.cancel);
@@ -107,25 +107,41 @@ namespace SAM.Picker
         private async Task LoadLibrary()
         {
             if (this.busy || this.loading || this.demo) return;
-            this.loading = true; this.EnableActions(false); this.status.Text = "Reading the local Steam library cache…";
+            this.account = this.steam.SteamUser.GetSteamId();
+            this.entries.Clear(); this.checkedIds.Clear(); this.Rebuild();
+            this.loading = true; this.EnableActions(false); this.status.Text = "Reading licenses for the active Steam account…";
             try
             {
                 string steamPath = API.Steam.GetInstallPath();
-                var candidates = await Task.Run(() => LibraryIndex.Read(steamPath));
+                var candidates = await Task.Run(() => LibraryIndex.Read(steamPath, this.account));
                 if (this.IsDisposed) return;
+                if (this.steam.SteamUser.GetSteamId() != this.account) throw new InvalidOperationException("Account changed during the scan. Refresh library again.");
                 this.entries.Clear(); this.checkedIds.Clear();
                 int count = 0;
                 foreach (var candidate in candidates.OrderBy(p => p.Value, StringComparer.CurrentCultureIgnoreCase))
                 {
                     if (this.IsDisposed) return;
-                    if (this.steam.SteamApps008.IsSubscribedApp(candidate.Key))
-                        this.entries[candidate.Key] = new Entry { Id = candidate.Key, Name = candidate.Value, Inspection = SchemaInspector.ReadCached(steamPath, candidate.Key) };
+                    this.entries[candidate.Key] = new Entry { Id = candidate.Key, Name = this.ResolveName(candidate.Key, candidate.Value), Inspection = SchemaInspector.ReadCached(steamPath, candidate.Key) };
                     if (++count % 30 == 0) { this.status.Text = "Checking ownership: " + count + " / " + candidates.Count; this.Rebuild(); await Task.Delay(1); }
                 }
-                this.Rebuild(); this.status.Text = "Loaded " + this.entries.Count + " games. Availability is based on cached permissions until you choose Check selected.";
+                this.Rebuild(); this.status.Text = "Loaded " + this.entries.Count + " games for this account. Check games checks selected games, or the entire list if none are selected.";
             }
             catch (Exception e) { this.status.Text = "Library load failed: " + e.Message; }
             finally { this.loading = false; if (!this.IsDisposed) this.EnableActions(true); }
+        }
+
+        private string ResolveName(uint id, string cached)
+        {
+            if (!string.IsNullOrWhiteSpace(cached) && cached != "App " + id) return cached;
+            string native = this.steam.SteamApps001.GetAppData(id, "name");
+            return string.IsNullOrWhiteSpace(native) ? "App " + id + " (name unavailable)" : native;
+        }
+        private bool EnsureAccount()
+        {
+            if (this.steam.SteamUser.GetSteamId() == this.account && this.steam.SteamUser.IsLoggedIn()) return true;
+            this.entries.Clear(); this.checkedIds.Clear(); this.Rebuild();
+            this.status.Text = "Steam account changed or signed out. Use Refresh library before continuing.";
+            return false;
         }
 
         private void Rebuild()
@@ -145,14 +161,14 @@ namespace SAM.Picker
                         2 => availability == Availability.PartlyProtected,
                         3 => availability == Availability.Protected,
                         4 => availability == Availability.NoAchievements,
-                        5 => availability == Availability.Unknown || availability == Availability.Unavailable || availability == Availability.NoLicense,
+                        5 => availability == Availability.Unknown || availability == Availability.Unavailable || availability == Availability.NoLicense || availability == Availability.PermissionsUnknown,
                         _ => true,
                     };
                     if (!shown) continue;
                     var item = new ListViewItem(entry.Name) { Tag = entry, Checked = this.checkedIds.Contains(entry.Id), ForeColor = StatusColor(availability), ToolTipText = entry.Inspection.Detail + "\n" + entry.Last };
                     item.SubItems.Add(entry.Id.ToString(CultureInfo.InvariantCulture)); item.SubItems.Add(entry.Inspection.StatusText);
                     item.SubItems.Add(availability == Availability.Unknown || availability == Availability.Unavailable ? "?" : entry.Inspection.EditableCount + " / " + entry.Inspection.Total);
-                    item.SubItems.Add(availability == Availability.Unknown ? "?" : entry.Inspection.ProtectedCount.ToString()); item.SubItems.Add(entry.Last);
+                    item.SubItems.Add(availability == Availability.Unknown ? "?" : entry.Inspection.Achievements.Any(a => !a.PermissionKnown) ? entry.Inspection.ProtectedCount + " + ?" : entry.Inspection.ProtectedCount.ToString()); item.SubItems.Add(entry.Last);
                     this.games.Items.Add(item);
                 }
             }
@@ -174,13 +190,13 @@ namespace SAM.Picker
 
         private void AddManual()
         {
-            if (this.demo || this.busy) return;
+            if (this.demo || this.busy || !this.EnsureAccount()) return;
             string text = Regex.Replace(this.manualIds.Text, @"https?://store\.steampowered\.com/app/(\d+)[^\s,]*", "$1", RegexOptions.IgnoreCase);
             int added = 0;
             foreach (string token in Regex.Split(text, @"[\s,;]+"))
             {
                 if (!uint.TryParse(token, out uint id) || id == 0 || !this.steam.SteamApps008.IsSubscribedApp(id)) continue;
-                if (!this.entries.ContainsKey(id)) this.entries[id] = new Entry { Id = id, Name = this.steam.SteamApps001.GetAppData(id, "name") ?? "App " + id, Inspection = SchemaInspector.ReadCached(API.Steam.GetInstallPath(), id) };
+                if (!this.entries.ContainsKey(id)) this.entries[id] = new Entry { Id = id, Name = this.ResolveName(id, "App " + id), Inspection = SchemaInspector.ReadCached(API.Steam.GetInstallPath(), id) };
                 this.checkedIds.Add(id); added++;
             }
             this.Rebuild(); this.status.Text = "Added/selected " + added + " valid licensed games."; this.manualIds.Clear();
@@ -188,8 +204,9 @@ namespace SAM.Picker
 
         private async Task RunBatch(BatchAction action)
         {
-            if (this.busy || this.demo) return;
+            if (this.busy || this.demo || !this.EnsureAccount()) return;
             var selected = this.SelectedEntries();
+            if (selected.Count == 0 && action == BatchAction.Check) selected = this.entries.Values.ToList();
             if (selected.Count == 0) { MessageBox.Show(this, "Select or check one or more games first.", "Select games"); return; }
             if (action != BatchAction.Check && selected.Any(e => this.editors.TryGetValue(e.Id, out var editor) && !editor.HasExited))
             { MessageBox.Show(this, "Close the open achievement editors for these games before a bulk action, so changes cannot conflict.", "Editors still open"); return; }
@@ -198,12 +215,18 @@ namespace SAM.Picker
             int done = 0;
             try
             {
+                foreach (var entry in selected) entry.Last = "Queued for read-only check";
+                this.Rebuild();
                 this.status.Text = "Read-only check for " + selected.Count + " games (up to two workers at once)…";
                 var requests = selected.Select(e => new BatchRequest { GameId = e.Id, ExpectedSteamId = this.account, Action = action }).ToArray();
                 var inspections = await this.runner.RunAsync(requests, false, result =>
                 {
                     this.Record(result, false); this.progress.Value = Math.Min(++done, this.progress.Maximum); this.status.Text = "Read-only check: " + done + " / " + selected.Count;
-                }, this.cancellation.Token);
+                }, this.cancellation.Token, id =>
+                {
+                    if (this.entries.TryGetValue(id, out var entry)) entry.Last = "Checking Steam achievements…";
+                    this.Rebuild();
+                });
                 foreach (var result in inspections) this.Record(result, false);
                 if (this.cancellation.IsCancellationRequested) { this.status.Text = "Check cancelled; no achievement changes made."; return; }
                 if (action == BatchAction.Check) { this.status.Text = "Read-only check complete for " + selected.Count + " games. See availability and Last result."; return; }
@@ -211,7 +234,7 @@ namespace SAM.Picker
                 if (review.ShowDialog(this) != DialogResult.OK) { this.status.Text = "Preview closed. No achievement changes made."; return; }
                 var approved = inspections.Where(r => r.Inspection.Live && r.Inspection.ChangesFor(action) > 0 && r.Inspection.Availability != Availability.Unknown)
                     .Select(r => new BatchRequest { GameId = r.Inspection.GameId, ExpectedSteamId = this.account, Action = action, Approved = true,
-                        AchievementIds = r.Inspection.Achievements.Where(a => !a.Protected && a.Readable && a.Achieved != (action == BatchAction.Unlock)).Select(a => a.Id).ToList() }).ToArray();
+                        AchievementIds = r.Inspection.Achievements.Where(a => a.PermissionKnown && !a.Protected && a.Readable && a.Achieved != (action == BatchAction.Unlock)).Select(a => a.Id).ToList() }).ToArray();
                 this.progress.Maximum = Math.Max(1, approved.Length); this.progress.Value = 0; done = 0;
                 this.status.Text = "Applying the confirmed plan. Cancel stops queued games; active saves finish.";
                 var applied = await this.runner.RunAsync(approved, true, result =>
@@ -233,6 +256,7 @@ namespace SAM.Picker
         private void Record(BatchResult result, bool apply)
         {
             if (!this.entries.TryGetValue(result.Inspection.GameId, out var entry)) return;
+            if (!string.IsNullOrWhiteSpace(result.Inspection.GameName)) entry.Name = result.Inspection.GameName;
             if (result.Outcome != SaveOutcome.Cancelled) entry.Inspection = result.Inspection;
             entry.Last = apply ? result.Outcome + ": " + result.Detail : result.Detail;
             this.Rebuild();
@@ -240,7 +264,7 @@ namespace SAM.Picker
 
         private void OpenEditors()
         {
-            if (this.demo || this.busy) return;
+            if (this.demo || this.busy || !this.EnsureAccount()) return;
             foreach (var entry in this.SelectedEntries())
             {
                 try

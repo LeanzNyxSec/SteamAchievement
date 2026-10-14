@@ -23,7 +23,7 @@ namespace SAM.Picker
             this.parentId = parent.Id; this.parentTicks = parent.StartTime.ToUniversalTime().Ticks;
         }
 
-        public async Task<List<BatchResult>> RunAsync(IEnumerable<BatchRequest> requests, bool apply, Action<BatchResult> completed, CancellationToken cancellation)
+        public async Task<List<BatchResult>> RunAsync(IEnumerable<BatchRequest> requests, bool apply, Action<BatchResult> completed, CancellationToken cancellation, Action<uint> started = null)
         {
             using var slots = new SemaphoreSlim(2);
             var jobs = requests.Select(async request =>
@@ -33,6 +33,7 @@ namespace SAM.Picker
                 try
                 {
                     if (cancellation.IsCancellationRequested) return Cancelled(request);
+                    started?.Invoke(request.GameId);
                     var result = await Task.Run(() => this.RunOne(request, apply, cancellation));
                     completed(result);
                     return result;
