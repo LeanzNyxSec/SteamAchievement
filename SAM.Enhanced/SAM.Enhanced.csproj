@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>SAM.Enhanced</AssemblyName>
+    <Version>7.0.41.1</Version>
+  </PropertyGroup>
+  <ItemGroup><ProjectReference Include="../SAM.API/SAM.API.csproj" /></ItemGroup>
+</Project>

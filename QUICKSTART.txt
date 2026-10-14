@@ -1,0 +1,17 @@
+SAM ENHANCED - by leanz
+Community: https://discord.gg/JaRSAWTUMx
+Original SAM: Rick / gibbed. Unofficial modified edition.
+
+1. Extract ALL release files into one folder.
+2. Open Steam and sign in.
+3. Double-click Start.cmd or SAM.Picker.exe.
+4. Check games, then use Check selected, Unlock editable or Lock editable.
+5. Review the proposed changes before confirming.
+
+Green: editable candidates. Amber: partly protected. Red: protected.
+Gray/unknown: check required or unavailable; retry later.
+Protected entries are skipped. Steam can reject saves.
+See Last result for each game's outcome.
+
+Windows + .NET Framework 4.8 required.
+Preview.cmd uses synthetic data and does not connect to Steam.

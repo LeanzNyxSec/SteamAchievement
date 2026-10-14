@@ -1,0 +1,1 @@
+Steam Achievement Manager enhanced with availability indicators, reviewed bulk unlock/lock, and per-game results. By leanz.
